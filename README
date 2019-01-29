@@ -1,0 +1,17 @@
+A place to put all of the CNV analytics codes
+#----------------------------------------------
+
+All scripts and datasets so that the results can
+be reproduced properly.
+
+#----------------------------------------------
+#  maintainer: alobley@gmail.com
+#----------------------------------------------
+1. cnvkit code and post-processing
+2. varscan code and post-processing
+3. Rscripts for pretty plots using karyploteR
+#----------------------------------------------
+
+
+
+#-----------------------------------------------
