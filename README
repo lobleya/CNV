@@ -7,8 +7,8 @@ be reproduced properly.
 #----------------------------------------------
 #  maintainer: alobley@gmail.com
 #----------------------------------------------
-1. cnvkit code and post-processing
-2. varscan code and post-processing
+1. cnvkit run code and post-processing
+2. varscan run code and post-processing
 3. Rscripts for pretty plots using karyploteR
 #----------------------------------------------
 
