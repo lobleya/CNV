@@ -1,13 +1,8 @@
 #!/usr/bin/env bash
 
-#$-cwd
-#-l h_rt=20:00:00,h_vmem=80G
-
-
-module load python
-
-#export tumor="../bams/WGS/B01P0095BAA03_tumour.bam"
-#export normal="../bams/WGS/B01P0095_ABC03_normal.bam"
+export tumor=$1
+export normal=$2
+export genome=$3
 #  ../bams/WGS/B01P0095AAA03_tumour.bam  ../bams/WGS/B01P0095_ABC03_normal.bam
 #   ln -s --force $normal Normal.bam
 #   ln -s --force $tumor Tumour.bam
@@ -17,10 +12,12 @@ module load python
    OUT=`basename $OUT`
    echo "$OUT $ACCESS $TARGET"
 
+`date`
+
 python3 cnvkit.py batch tumour.bam --normal Normal.bam \
-    --fasta /data/BCI-BioInformatics/anna/genomes/fsa/hg38.fa --access data/$ACCESS  \
+    --fasta $genome --access data/$ACCESS  \
     -t data/$TARGET \
     --output-reference my_reference.cnn --output-dir results/$OUT \
     --diagram --scatter
  
-
+ `date`
