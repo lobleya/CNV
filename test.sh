@@ -14,7 +14,7 @@ export genome=$3
 
 `date`
 
-python3 cnvkit.py batch tumour.bam --normal Normal.bam \
+python3 cnvkit.py batch tumour.bam --normal normal.bam \
     --fasta $genome --access data/$ACCESS  \
     -t data/$TARGET \
     --output-reference my_reference.cnn --output-dir results/$OUT \
