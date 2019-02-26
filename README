@@ -1,3 +1,4 @@
+#----------------------------------------------
 A place to put all of the CNV analytics codes
 #----------------------------------------------
 
@@ -10,6 +11,7 @@ be reproduced properly.
 1. cnvkit run code and post-processing
 2. varscan run code and post-processing
 3. Rscripts for pretty plots using karyploteR
+4. To be contributed by Lavanya/Helen/Anna/Stefano and Graham ;-)
 #----------------------------------------------
 
 
