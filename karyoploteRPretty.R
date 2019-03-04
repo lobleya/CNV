@@ -1,9 +1,10 @@
+#--------------------------------------------------------
 library("karyoploteR")
 library("regioneR")
 library("zoo")
 #--------------------------------------------------------
 parser <- ArgumentParser(description='Process some integers')
-
+#--------------------------------------------------------
 parser$add_argument('--chr', 
                     metavar='N', 
                     type="character", 
@@ -16,7 +17,17 @@ parser$add_argument('--file',
                     action='store_const',
                     const='sum', 
                     default='max',
-                    help='sum the integers (default: find the max)')
+                    help='file name for logR input')
+#--------------------------------------------------------
+parser$add_argument('--tbam', 
+                    dest='tbam', 
+                    action='store_const',
+                    help='tumor bam file name for coverage')
+#--------------------------------------------------------
+parser$add_argument('--nbam', 
+                    dest='nbam', 
+                    action='store_const',
+                    help='normal bam file name for coverage')
 #--------------------------------------------------------
 parser$print_help()
 # default args for ArgumentParser()$parse_args are commandArgs(TRUE)
@@ -24,6 +35,8 @@ args <- parser$parse_args()
 infile<-get(args$infile)
 gmax  <-get(args$max)
 chrs  <-get(args$chr)
+tbam  <-get(args$tbam)
+nbam  <-get(args$nbam)
 #--------------------------------------------------------
 d<-read.table("C://Users/lobley01/Documents/ctDNA_PROJECTS/test.txt",
               header=T)
