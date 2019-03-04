@@ -4,7 +4,7 @@ library("GenomicAlignments")
 library("zoo")
 library("argparse")
 #--------------------------------------------------------
-parser <- ArgumentParser(description='Process some integers')
+parser <- ArgumentParser(description='Make some pretty karyotype plots with R')
 #--------------------------------------------------------
 parser$add_argument('--chr', 
                     metavar='N', 
