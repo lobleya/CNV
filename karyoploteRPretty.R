@@ -2,6 +2,7 @@
 library("karyoploteR")
 library("regioneR")
 library("zoo")
+library("GAAlignments")
 #--------------------------------------------------------
 parser <- ArgumentParser(description='Process some integers')
 #--------------------------------------------------------
