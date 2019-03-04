@@ -1,8 +1,8 @@
-#--------------------------------------------------------
 library("karyoploteR")
 library("regioneR")
+library("GenomicAlignments")
 library("zoo")
-library("GAAlignments")
+library("argparse")
 #--------------------------------------------------------
 parser <- ArgumentParser(description='Process some integers')
 #--------------------------------------------------------
@@ -15,20 +15,17 @@ parser$add_argument('--chr',
 #--------------------------------------------------------
 parser$add_argument('--file', 
                     dest='infile', 
-                    action='store_const',
-                    const='sum', 
-                    default='max',
-                    help='file name for logR input')
+                    help='input files (default: find the max)')
 #--------------------------------------------------------
 parser$add_argument('--tbam', 
-                    dest='tbam', 
-                    action='store_const',
-                    help='tumor bam file name for coverage')
+                    dest='tbam',
+                    default='max',
+                    help='tumor bam to store coverage')
 #--------------------------------------------------------
 parser$add_argument('--nbam', 
-                    dest='nbam', 
-                    action='store_const',
-                    help='normal bam file name for coverage')
+                    dest='infile', 
+                    default='max',
+                    help='normal bam to store coverage')
 #--------------------------------------------------------
 parser$print_help()
 # default args for ArgumentParser()$parse_args are commandArgs(TRUE)
@@ -36,10 +33,14 @@ args <- parser$parse_args()
 infile<-get(args$infile)
 gmax  <-get(args$max)
 chrs  <-get(args$chr)
-tbam  <-get(args$tbam)
-nbam  <-get(args$nbam)
+# default args for ArgumentParser()$parse_args are commandArgs(TRUE)
+tbam <- get(args$tbam)
+nbam <- get(args$nbam)
 #--------------------------------------------------------
-d<-read.table("C://Users/lobley01/Documents/ctDNA_PROJECTS/test.txt",
+tcvg <- coverage(readGAlignments(tbam))
+ncvg <- coverage(readGAlignments(nbam))
+#--------------------------------------------------------
+d<-read.table("H:/projects/ctDNA_PROJECTS/test.txt",
               header=T)
 gmax<-2
 #--------------------------------------------------------
@@ -95,7 +96,9 @@ kpRect(kp, data = big.regs.down,
 #Data points
 yrange<-max(data.points$y)-min(data.points$y)
 #--------------------------------------------------------
-kpAxis(kp, ymin = -25, ymax = 5, 
+kpAxis(kp, 
+       ymin = -25, 
+       ymax = 5, 
        r0=0.2, r1=1, numticks = 7, 
        col="#666666", cex=0.5)
 #--------------------------------------------------------
@@ -119,56 +122,104 @@ for(chr in seqlevels(kp$genome))
           chr = chr, 
           x=start(chr.dp)[3:(length(chr.dp)-3)], 
           y=rmean,
-          col=data.points.colors[3], 
-          r0=0.6, r1=1)
+          ymin=min(rmean),
+          ymax=max(rmean),
+          col=data.points.colors[3])
   
   kpPlotRibbon(kp, chr=chr, data=chr.dp[3:(length(chr.dp)-3)], 
-               y0=rmean-rsd, y1=rmean+rsd, 
-               r0=0.60, r1=1, 
-               col="#FF336633", border=NA)
+               y0=rmean-rsd, 
+               y1=rmean+rsd, 
+               ymin=min(rmean-rsd),
+               ymax=max(rmean+rsd),
+               col="#FF336633",
+               border=NA)
 }
+
 #--------------------------------------------------------
-kpAbline(kp, h=yh, 
-         data.panel = 1, 
-         col="gray")
-#--------------------------------------------------------
+
 signif.points=data.points[which(data.points$pvalue<0.05),]
-#--------------------------------------------------------
+
 kpPoints(kp, 
          data=signif.points,
-         y=signif.points$y*0.9,
-         pch=16, cex=0.3, 
-         col=rgb(0.5,0,0,0.2), 
-         r0=0.6, r1=1)
-#--------------------------------------------------------
+         y=signif.points$y,
+         pch=16, cex=0.5, 
+         col=rgb(0.5,0,0,0.4), 
+         r0=0.5, r1=0.8)
+
+kpAddLabels(kp, 
+            labels = "logR", 
+            srt=90, pos=1, 
+            label.margin = 0.04, 
+            ymax=ymax, 
+            ymin=ymin)
+
+signif.points<-signif.points[seqnames(signif.points)==chr,]
+signif.points<-signif.points[order(signif.points$pvalue),]
+top.genes    <-reduce(split(signif.points, 
+                            elementMetadata(signif.points)$gene),
+                      drop.empty.ranges=TRUE)
+top.genes    <-top.genes[which(lapply(top.genes,length)>0)]
+
+top.pvals    <-lapply(split(signif.points,
+                            signif.points$gene),function(x){return(min(x$pvalue,na.rm=T))})
+
+top.pvals    <-order(unlist(top.pvals[match(names(top.genes),names(top.pvals))]))[1:params$N]
+
+gene.names<-names(top.genes)[top.pvals]
+top.genes<-top.genes[top.pvals]
+
+kpPlotMarkers(kp,
+              chr=chr,
+              x=unlist(lapply(top.genes,function(x){return(min(ranges(x)@start))})),
+              labels = gene.names, 
+              r0=0.9,
+              adjust.label.position=T,
+              label.margin=0.01,
+              text.orientation = "horizontal")
+
 ### Data Panel 2 ###
 # bam coverage plot data ###
 #medium regions and their coverage
-#--------------------------------------------------------
 kpPlotRegions(kp,  
-              data=mid.regs, 
+              data=cvg, 
               r0 = 0.2, r1=1, 
               border=NA, 
               data.panel=2)
-#--------------------------------------------------------
+
 kpPlotCoverage(kp, 
-               data=mid.regs, 
+               data=cvg, 
                r0=0.2, r1=0, 
                col=data.points.colors[2], 
                data.panel = 2)
-#--------------------------------------------------------
+
 kpPlotCoverage(kp, 
-               data=mid.regs, 
+               data=cvg, 
                r0=0.2, r1=0.12, 
                col=data.points.colors[1], 
                data.panel = 2)
-#--------------------------------------------------------
+
 kpText(kp, chr=seqlevels(kp$genome), 
        y=0.4, x=0, data.panel = 2, r0=0.2, r1=0, 
        col="#444444", label="30x", cex=0.8, pos=2)
-#--------------------------------------------------------
+
 kpAbline(kp, h=0.4, data.panel = 2, 
          r0=0.2, r1=0, col=data.points.colors[3])
+
+
+
+#---------------------------------------------------
+# Data Panel 3 #
+# Highlight top N genes ###
+#---------------------------------------------------
+library("TxDb.Hsapiens.UCSC.hg38.knownGene")
+library("org.Hs.eg.db")
+txdb<-genes(TxDb.Hsapiens.UCSC.hg38.knownGene)
+map<-as.list(org.Hs.egSYMBOL)
+m<-match(gene.names,map)
+txdb<-txdb[match(names(map[m]),names(txdb))]
+#---------------------------------------------------
+# top N genes panel
+# mark by copy number???
 #---------------------------------------------------
 kpPlotGenes(kp, 
             data=txdb, 
@@ -179,4 +230,7 @@ kpPlotGenes(kp,
             col="blue", 
             marks.col="white", 
             gene.name.col="black")
-#---------------------------------------------------
+
+#--- intersect genomic intervals ----
+
+
