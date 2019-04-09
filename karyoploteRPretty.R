@@ -2,8 +2,28 @@
 library("karyoploteR")
 library("regioneR")
 library("zoo")
-#library("GenomicAlignments")
 library("argparse")
+#-----------------------------------------------------------------
+#  functions #
+#-----------------------------------------------------------------
+mcolAsRleList<-
+function (x, varname) 
+{
+  if (!is(x, "GenomicRanges")) 
+    stop("'x' must be a GRanges object")
+  var <- mcols(x)[, varname]
+  
+  rg_per_chrom <- split(ranges(x), seqnames(x))
+  var_per_chrom <- split(var, seqnames(x))
+  rle_list <- mapply(function(seqlen, ir, v) {
+    if (is.na(seqlen)) 
+      seqlen <- max(end(ir))
+    rle <- Rle(v[NA_integer_], seqlen)
+    rle[ir] <- Rle(v, width(ir))
+    rle
+  }, seqlengths(x), rg_per_chrom, var_per_chrom, SIMPLIFY = FALSE)
+  as(rle_list, "SimpleRleList")
+}
 #-----------------------------------------------------------------
 parser <- ArgumentParser(description='make pretty karyotype plots')
 parser$add_argument('--chr', 
@@ -13,17 +33,17 @@ parser$add_argument('--chr',
                     default="chr9",
                     help='select chromosome for plotting')
 #--------------------------------------------------------
-#parser$add_argument('--tbam', dest='tbam', type="character",
-#                    help='bamfile for coverage plots',
-#                    default="H://projects/ctDNA_pancreas/tbam")
-#--------------------------------------------------------
-#parser$add_argument('--nbam', dest='nbam', type="character",
-#                    help='bamfile for coverage plots',
-#                    default="H://projects/ctDNA_pancreas/nbam")
+#
 #--------------------------------------------------------
 parser$add_argument('--logR', dest='logRfile', type="character",
                     help="logR data file for processing",
                     default="H://projects/ctDNA_pancreas/test.txt")
+parser$add_argument('--tum', dest='Tfile', type="character",
+                    help="logR data file for processing",
+                    default="H://projects/ctDNA_pancreas/tum.txt")
+parser$add_argument('--norm', dest='Nfile', type="character",
+                    help="logR data file for processing",
+                    default="H://projects/ctDNA_pancreas/norm.txt")
 #--------------------------------------------------------
 parser$add_argument('--topN', dest="N",type="integer",
                     help="top N genes for display", default=10)
@@ -53,7 +73,6 @@ data.points<- GRanges(IRanges(start=d$start,end=d$end),
                       gene=d$gene,
                       y=d$log2,
                       pvalue=d$pvalue)
-
 #--------------------------------------------------------
 signif.points<-toGRanges(d[which(d$pvalue<0.05 & d$chromosome==chr),])
 smin<-min(signif.points$log2)
@@ -114,13 +133,14 @@ yrange<-max(data.points$y)-min(data.points$y)
 #--------------------------------------------------------
 ymin<-  25
 ymax<- -25
+N<-10
 #--------------------------------------------------------
 kpAxis(kp, 
-       ymin = smin, 
-       ymax = smax, 
+       ymin = round(smin), 
+       ymax = round(smax), 
        r0=0.2, 
        r1=1, 
-       numticks = 11, 
+       numticks = smax-smin+1, 
        col="#666666", cex=0.5)
 #--------------------------------------------------------
 yh<-1/yrange*abs(min(data.points$y))
@@ -238,7 +258,6 @@ kpPlotMarkers(kp,
 kpAddBaseNumbers(kp)
 kpAddCytobandLabels(kp,force="all",cex=0.4)
 #--------------------------------------------------------
-
 #--------------------------------------------------------
 # Data Panel 2 ###
 # bam coverage plot data ###
@@ -247,14 +266,21 @@ kpAddCytobandLabels(kp,force="all",cex=0.4)
 library(BSgenome.Hsapiens.UCSC.hg19)
 library(data.table)
 #--------------------------------------------------------
-gr.windows <- tileGenome(seqinfo(Hsapiens), tilewidth=100000,cut.last.tile.in.chrom=TRUE)
-gr.data    <- GRanges(c("chr1", "chr2"), IRanges(c(10, 50), c(15, 55)), value = c(20, 10))
-gr.data.RleList <-  mcolAsRleList(gr.data, varname = "value")
+gr.windows        <-  tileGenome(seqinfo(Hsapiens), 
+                                 tilewidth=100000,
+                                 cut.last.tile.in.chrom=TRUE)
+gr.data           <-  data.points
+gr.data.RleList   <-  mcolAsRleList(gr.data, varname = "y")
 seqlevels(gr.windows, force=TRUE) <- names(gr.data.RleList)
-gr.data.binnedAvg <- binnedAverage(gr.windows, gr.data.RleList, "value")
+gr.data.binnedAvg1 <- binnedAverage(gr.windows, gr.data.RleList, "depthT")
+gr.data.binnedAvg2 <- binnedAverage(gr.windows, gr.data.RleList, "depthN")
 #--------------------------------------------------------
-kpText(kp, chr=seqlevels(kp$genome), 
-       y=0.4, x=0, data.panel = 2, r0=0.2, r1=0, 
+kpText(kp, 
+       chr=seqlevels(kp$genome), 
+       y=0.4, 
+       x=0, 
+       data.panel = 2, 
+       r0=0.2, r1=0, 
        col="#444444", label="30x", cex=0.8, pos=2)
 kpAbline(kp, 
          h=0.4,
@@ -262,12 +288,47 @@ kpAbline(kp,
          r0=0.2,
          r1=0,
          col=dp.colors[3])
-kpText(kp, chr=seqlevels(kp$genome), 
-       y=0.4, x=0, data.panel = 2, r0=0.2, r1=0, 
+#--------------------------------------------------------
+kpPlotCoverage(kp, 
+               data = gr.data.binnedAvg1, 
+               r0=0.2, 
+               r1=0, 
+               col=dp.colors[2], 
+               data.panel = 2)
+#--------------------------------------------------------
+kpPlotCoverage(kp, 
+               data = gr.data.binnedAvg1,
+               r0=0.2, r1=0.12, 
+               col=dp.colors[1], 
+               data.panel = 2)
+#--------------------------------------------------------
+kpText(kp, 
+       chr=seqlevels(kp$genome), 
+       y=0.4, 
+       x=0, 
+       data.panel = 3, 
+       r0=0.2, r1=0, 
        col="#444444", label="30x", cex=0.8, pos=2)
 #--------------------------------------------------------
-kpPlotCoverage(kp, data = mid.regs, r0=0.2, r1=0, col=dp.colors[2], data.panel = 2)
-kpPlotCoverage(kp, data = mid.regs, r0=0.2, r1=0.12, col=dp.colors[1], data.panel = 2)
+kpAbline(kp, 
+         h=0.4,
+         data.panel = 3, 
+         r0=0.2,
+         r1=0,
+         col=dp.colors[3])
+#--------------------------------------------------------
+kpPlotCoverage(kp, 
+               data = gr.data.binnedAvg2, 
+               r0=0.2, 
+               r1=0, 
+               col=dp.colors[2], 
+               data.panel = 3)
+#--------------------------------------------------------
+kpPlotCoverage(kp, 
+               data = gr.data.binnedAvg2,
+               r0=0.2, r1=0.12, 
+               col=dp.colors[1], 
+               data.panel = 3)
 #--------------------------------------------------------
 #
 #--------------------------------------------------------
@@ -278,11 +339,8 @@ kpAbline(kp,
          r1=0,
          col=dp.colors[3])
 #--------------------------------------------------------
-
 graphics.off()
 #--------------------------------------------------------
 q('no')
-
-
 
 
