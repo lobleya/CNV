@@ -85,16 +85,8 @@ kp<-plotKaryotype(genome="hg38",
 #-----------------------------------------------------------------
 #   Data Panel 1                                                 #
 #-----------------------------------------------------------------
-#Big regions
+# Midregions i.e. not changing
 #-----------------------------------------------------------------
-big.regs.up<-data.ranges[which(data.ranges$pvalue <0.05 & data.ranges@seqnames==chr & data.ranges$log2>0 ),]
-big.regs.up$x0<-big.regs.up@ranges@start
-big.regs.up$x1<-big.regs.up$x0+big.regs.up@ranges@width
-#-----------------------------------------------------------------
-big.regs.down<-data.ranges[which(data.ranges$pvalue <0.05 & data.ranges@seqnames==chr & data.ranges$log2 < 0),]
-big.regs.down$x0<-big.regs.down@ranges@start
-big.regs.down$x1<-big.regs.down$x0+big.regs.down@ranges@width
-#--------------------------------------------------------
 kpRect(kp, data = mid.regs, 
         col="lightgray", 
         y0=0.4,
@@ -167,7 +159,6 @@ ymin=min(rmean)
 #--------------------------------------------------------
 kpText(kp,chr=chr,y=0.4,x=0,data.panel=1,ymin=0.2,ymax=0.4,label="logR",
        r0=1,r1=1.2,pos=2,cex=0.8,col="black")
-
 #--------------------------------------------------------
 signif.points<-signif.points[order(signif.points$pvalue),]
 signif.genes<-signif.points[which(signif.points$gene!="-"),]
@@ -238,14 +229,13 @@ kpAddCytobandLabels(kp,force="all",cex=0.4)
 # bam coverage plot data ###
 # medium regions and their coverage
 #--------------------------------------------------------
-#library(BSgenome.Hsapiens.UCSC.hg38)
-#library(data.table)
+#
 #--------------------------------------------------------
 #
 #--------------------------------------------------------
-gr.windows        <-  tileGenome(seqinfo(Hsapiens)[chr], 
-                                 tilewidth=50000,
-                                 cut.last.tile.in.chrom=TRUE)
+#gr.windows        <-  tileGenome(seqinfo(Hsapiens)[chr], 
+#                                tilewidth=50000,
+#                                cut.last.tile.in.chrom=TRUE)
 gr.data           <-  data.ranges[which(data.ranges@seqnames==chr),]
 #---------------------------------------------------------
 kpPlotDensity(kp,gr.data,data.panel=2,col="yellow",border="gold",r1=0.3,ymin=700,ymax=0)
@@ -254,7 +244,7 @@ kpPlotDensity(kp,gr.data,data.panel=2,border="royalblue",col="lightblue",r1=0.3,
 kpText(kp,chr=chr,y=0.4,x=0,data.panel=2,ymin=1000,ymax=0,label="30x ",
        r0=0.2,r1=0.3,pos=2,cex=0.8,col="black")
 kpAbline(kp,h=30,data.panel=2,ymin=700,ymax=0,r1=0.3,col="black")
-
+#--------------------------------------------------------
 graphics.off()
 }
 #--------------------------------------------------------
