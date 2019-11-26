@@ -1,0 +1,38 @@
+#------------------------------------------
+# created with purity prediction in mind
+#-------------------------------------------
+# follows on from the purity pipeline
+#-------------------------------------------
+#---------------------------------
+# PON script @ 22nd July 2019
+# author a.lobley@qmul.ac.uk
+#---------------------------------
+#$ -cwd
+#$ -l highmem, h_rt=50:00:00
+#---------------------------------
+COSMIC_VCF=/data/BCI-BioInformatics/anna/cosmic/cosmic.vcf
+DBSNP_VCF=/data/BCI-BioInformatics/anna/dbsnp/dbsnp.vcf
+JAVA=/data/home/hfx532/software/jdk1.7.0_80/bin  # local install for mutectv1
+REF=/data/BCI-BioInformatics/anna/genomes/fsa/hg38.fa
+OUTPUT=GATK3_PON.vcf
+
+VCF=""
+#------------------------------------
+VCF_LIST=$@
+VCF=""
+for vcf in $@;
+do
+    VCF="$VCF    -V $vcf "
+done
+------------------------------------
+CMD="java -jar ../GenomeAnalysisTK.jar -T CombineVariants  -nt 10 \
+ -R $REF \
+ -genotypeMergeOptions UNIQUIFY \
+ -o $OUTPUT  "
+
+
+echo -ne "$CMD $VCF \n"
+
+date
+$CMD $VCF
+date
